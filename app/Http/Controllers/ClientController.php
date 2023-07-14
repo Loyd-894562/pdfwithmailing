@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
-use Illuminate\Http\Request;
+use App\Mail\BulkMail;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;;
+use Illuminate\Support\Facades\Mail;
 
 class ClientController extends Controller
 {
@@ -67,4 +70,24 @@ class ClientController extends Controller
     {
         //
     }
+
+    public function email(Client $client){
+        //create a pdf of the statement of account
+        $pdf = Pdf::loadView('pdf.client-summary',[
+            'client' =>$client
+        ]);
+
+        $filename = 'statements/' . $client->last_name . " " . $client->id . ".pdf";
+        $pdf->save($filename);
+
+        Mail::send('email.soa' ,['client'=>$client], function($message) use ($client, $filename){
+            $message->to($client->email);
+            $message->subject('Statement of Account');
+            $message->attach($filename);
+        });
+
+        return back();
+    }
+
+
 }
